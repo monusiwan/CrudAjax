@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"
+        integrity="sha384-oBqDVmMz9ATKxIep9tiCxS/Z9fNfEXiDAYTujMAeBAsjFuCZSmKbSSUnQlmh/jp3"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js"
+        integrity="sha384-cuYeSxntonz0PPNlHhBs68uyIAVpIIOZZ5JqeqvYYIcEL727kskC66kF92t6Xl2V"
+        crossorigin="anonymous"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+    <title>Home</title>
+</head>
+
+<body>
+    <h3 class="alert alert-secondary text-center" style="margin-left: 10%;margin-right: 11%;margin-top: 1%;">Details
+    </h3>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4">
+                <p class="alert alert-info m-2 text-center">Add Details</p>
+                <form action="" method="post" id="form" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <label>Name</label>
+                    <input type="text" id="name" class="form-control">
+                    <label>Image</label>
+                    <input type="file" class="form-control mt-2 mb-2" id="img">
+                    <label>Mobile</label>
+                    <input type="text" id="mobile" class="form-control">
+                    <button type="button" id="btnsave" onclick="add()" class="btn btn-success form-control mt-3 "
+                        value="save">Save</button>
+                </form>
+                <p id="smsg" class="text-center mt-2"></p>
+            </div>
+            <div class="col-md-8">
+                <p class="alert alert-info  m-2 text-center">Show Details</p>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th scope="col">ID</th>
+                            <th>Name</th>
+                            <th>Images</th>
+                            <th>Mobile No.</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody">
+                        {% for p in stud %}
+                        <tr>
+                            <td>{{p.id}}</td>
+                            <td>{{p.name}}</td>
+                            <td><img src="/media/{{p.img}}" style="height: 38px;width: 45px;border-radius: 20px;"
+                                    alt="img">
+                            </td>
+                            <td>{{p.mobile}}</td>
+                            <td>
+                                <button class="btn btn-info" onclick="edit(this.value)" value="{{p.id}}">Edit</button>
+                                &nbsp;&nbsp; <button onclick="del(this.value)" class="btn btn-danger"
+                                    value="{{p.id}}">Delete</button>
+                            </td>
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+                </table>
+
+            </div>
+        </div>
+    </div>
+
+</body>
+<script>
+    function table(x) {
+        for (i = 0; i < x.length; i++) {
+            output += "<tr><td>" + x[i].id + "</td><td>" + x[i].name + "</td><td>" + "<img src='/media/" + x[i].img + "' style='height: 38px;width: 45px;border-radius: 20px;' alt='img'>" + "</td><td>" + x[i].mobile + "</td><td><button onclick='edit(this.value)' class='btn btn-info' value=" + x[i].id + ">Edit</button> &nbsp;&nbsp; <button class='btn btn-danger' onclick='del(this.value)' value=" + x[i].id + ">Delete</button>"
+        }
+        document.getElementById("tbody").innerHTML = output;
+        $("#form")[0].reset();
+        document.getElementById('btnsave').innerHTML = "Save";
+        document.getElementById('btnsave').value = "save";
+
+    }
+    function add(btn) {
+        name = $("#name").val();
+        mobile = $("#mobile").val();
+        btn = $("#btnsave").val();
+        img = $("#img").val();
+        var data = new FormData();
+        data.append('img', $("input[id^='img']")[0].files[0])
+        data.append("name", name)
+        data.append("mobile", mobile)
+        data.append('btn', btn)
+
+        if (name == "" || mobile == "") {
+            alert("Blank Field not allowed");
+        }
+        else {
+            console.log(name);
+            console.log(mobile);
+
+            $.ajax({
+                url: "{% url 'add' %}",
+                mimeType: "multipart/form-data",
+                contentType: false,
+                processData: false,
+                method: "POST",
+                data: data,
+                success: function (data) {
+                    data = JSON.parse(data)
+
+                    if (data.status == 1) {
+                        document.getElementById("smsg").innerHTML = data.msg;
+                        document.getElementById("smsg").style.color = "green";
+                        setTimeout(function () { $('#smsg').hide() }, 5000);
+                        output = "";
+                        x = data.stu;
+
+                        table(x);
+                    }
+                    else if (data.status == 3) {
+
+                        document.getElementById("smsg").innerHTML = data.msg;
+                        document.getElementById("smsg").style.color = "green";
+                        setTimeout(function () { $('#smsg').hide() }, 5000);
+                        output = "";
+                        x = data.std;
+                        table(x);
+                    }
+
+                }
+            })
+        }
+    }
+    function edit(a) {
+        $.ajax({
+            url: "{% url 'edit' %}",
+            method: "POST",
+            data: { 'id': a },
+            success: function (data) {
+                document.getElementById('name').value = data.st[0].name;
+                document.getElementById('mobile').value = data.st[0].mobile;
+                document.getElementById('btnsave').innerHTML = "Update";
+                document.getElementById('btnsave').value = data.st[0].id;
+
+            }
+        })
+    }
+    function del(b) {
+        $.ajax({
+            url: "{% url 'del' %}",
+            method: "POST",
+            data: { "id": b },
+            success: function (data) {
+                document.getElementById("smsg").innerHTML = data.msg;
+                document.getElementById("smsg").style.color = "red";
+                setTimeout(function () { $('#smsg').hide() }, 5000);
+                output = "";
+                x = data.s;
+                table(x);
+            }
+        })
+    }
+</script>
+
+</html>
